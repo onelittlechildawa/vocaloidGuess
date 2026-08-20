@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vocaloid 猜曲子</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Vocaloid 猜曲子</h1>
+        </header>
+
+        <!-- Tab Switcher -->
+        <div class="tabs">
+            <button class="tab-btn active" data-tab="single">单人模式</button>
+            <button class="tab-btn" data-tab="multi">多人联机</button>
+        </div>
+
+        <!-- ===== Single Player Panel ===== -->
+        <div class="tab-panel active" id="panel-single">
+            <div class="controls">
+                <div class="difficulty-selector">
+                    <span class="label">曲库：</span>
+                    <button class="diff-btn active" data-difficulty="ja_legend">日文传说</button>
+                    <button class="diff-btn" data-difficulty="all_legend">所有传说</button>
+                    <button class="diff-btn" data-difficulty="zh_legend">中文传说</button>
+                    <button class="diff-btn" data-difficulty="zh_hall">中文殿堂</button>
+                    <button class="diff-btn" data-difficulty="all_myth">所有神话</button>
+                </div>
+                <button class="btn-new-game" id="btnNewGame">新游戏</button>
+                <button class="btn-hint" id="btnHint">提示</button>
+            </div>
+
+            <div class="search-container">
+                <div class="search-wrapper">
+                    <input type="text" id="searchInput" placeholder="搜索曲名、作者或虚拟歌手（支持中/日/英文）" autocomplete="off">
+                    <div class="search-icon">›</div>
+                    <div class="suggestions" id="suggestions"></div>
+                </div>
+            </div>
+
+            <div class="game-info">
+                <span id="guessCount">请先开始新游戏</span>
+                <span id="gameStatus"></span>
+            </div>
+
+            <div class="empty-state" id="emptyState"></div>
+
+            <div class="guesses-container" id="guessesContainer" style="display:none;">
+                <table id="guessesTable">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>猜测歌曲</th>
+                            <th>作者</th>
+                            <th>虚拟歌手</th>
+                            <th>发行年份</th>
+                            <th>语言</th>
+                            <th>级别</th>
+                            <th>曲长</th>
+                        </tr>
+                    </thead>
+                    <tbody id="guessesBody"></tbody>
+                </table>
+            </div>
+
+            <div class="legend">
+                <span class="legend-item"><span class="dot green"></span> 完全匹配</span>
+                <span class="legend-item"><span class="dot yellow"></span> 接近</span>
+                <span class="legend-item"><span class="dot gray"></span> 不匹配</span>
+                <span class="legend-item">↑↓ 数值方向</span>
+            </div>
+        </div>
+
+        <!-- ===== Multiplayer Panel ===== -->
+        <div class="tab-panel" id="panel-multi">
+            <!-- Lobby -->
+            <div class="mp-lobby" id="mpLobby">
+                <h3>多人联机对战</h3>
+                
+                <div class="mp-section">
+                    <h4>创建房间</h4>
+                    <p>选择曲库和赛制，分享房间码给好友</p>
+                    <div class="format-selector" style="margin-bottom:8px;">
+                        <span class="selector-label">曲库</span>
+                        <button class="format-btn active" data-mp-diff="ja_legend">日文传说</button>
+                        <button class="format-btn" data-mp-diff="all_legend">所有传说</button>
+                        <button class="format-btn" data-mp-diff="zh_legend">中文传说</button>
+                        <button class="format-btn" data-mp-diff="zh_hall">中文殿堂</button>
+                        <button class="format-btn" data-mp-diff="all_myth">所有神话</button>
+                    </div>
+                    <div class="format-selector">
+                        <span class="selector-label">赛制</span>
+                        <button class="format-btn" data-format="1">BO1</button>
+                        <button class="format-btn active" data-format="3">BO3</button>
+                        <button class="format-btn" data-format="5">BO5</button>
+                        <button class="format-btn" data-format="7">BO7</button>
+                    </div>
+                    <button class="btn-new-game" id="btnCreateRoom">创建房间</button>
+                </div>
+
+                <div class="mp-section">
+                    <h4>加入房间</h4>
+                    <p>输入好友分享的 5 位房间码</p>
+                    <div class="room-code-input">
+                        <input type="text" id="roomCodeInput" placeholder="00000" maxlength="5" autocomplete="off">
+                        <button class="btn-new-game" id="btnJoinRoom">加入</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Room: waiting / playing -->
+            <div id="mpRoom" style="display:none;">
+                <div class="mp-match-info">
+                    <div class="mp-player-card" id="cardSelf">
+                        <div class="player-name">你</div>
+                        <div class="player-score" id="scoreSelf">0</div>
+                        <div class="player-status" id="statusSelf">准备中...</div>
+                    </div>
+                    <div style="display:flex;align-items:center;font-weight:700;font-size:1.2rem;color:var(--text-secondary)">
+                        VS
+                    </div>
+                    <div class="mp-player-card" id="cardOpponent">
+                        <div class="player-name">等待对手...</div>
+                        <div class="player-score" id="scoreOpp">0</div>
+                        <div class="player-status" id="statusOpp"></div>
+                    </div>
+                </div>
+
+                <div class="mp-controls">
+                    <div class="mp-room-meta">
+                        <span class="selector-label" id="mpFormatLabel">BO3</span>
+                        <span class="room-code-display" id="mpRoomCode">-----</span>
+                    </div>
+                    <div class="mp-actions">
+                        <button class="btn-primary" id="btnReady">准备</button>
+                        <button class="btn-primary" id="btnStartMatch" style="display:none;">开始</button>
+                        <button class="btn-secondary" id="btnSurrender">投降</button>
+                        <button class="btn-primary" id="btnNextRound" style="display:none;">下一局</button>
+                        <button class="btn-secondary" id="btnCopyRoom">复制房间码</button>
+                        <button class="btn-secondary" id="btnLeaveRoom">离开</button>
+                    </div>
+                    <div class="mp-host-tools" id="hostTools" style="display:none;">
+                        <span class="selector-label">难度</span>
+                        <select id="hostDifficulty" class="host-select"></select>
+                        <button class="btn-secondary" id="btnApplyDifficulty">应用</button>
+                    </div>
+                </div>
+
+                <div class="mp-timer" id="mpTimer" style="display:none;">120</div>
+                <div class="mp-notification" id="mpNotification" style="display:none;"></div>
+
+                <div class="search-container">
+                    <div class="search-wrapper">
+                        <input type="text" id="mpSearchInput" placeholder="搜索曲名或作者" autocomplete="off" disabled>
+                        <div class="search-icon">›</div>
+                        <div class="suggestions" id="mpSuggestions"></div>
+                    </div>
+                </div>
+
+                <div class="game-info">
+                    <span id="mpGuessCount">等待开始...</span>
+                </div>
+
+                <div class="guesses-container" id="mpGuessesContainer" style="display:none;">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>猜测歌曲</th>
+                                <th>作者</th>
+                                <th>虚拟歌手</th>
+                                <th>发行年份</th>
+                                <th>语言</th>
+                                <th>级别</th>
+                                <th>曲长</th>
+                            </tr>
+                        </thead>
+                        <tbody id="mpGuessesBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Result Modal -->
+        <div class="modal-overlay" id="resultModal">
+            <div class="modal">
+                <div class="modal-icon" id="modalIcon"></div>
+                <h2 id="modalTitle"></h2>
+                <div id="modalDetails"></div>
+                <button class="btn-new-game" id="btnModalNewGame">再来一局</button>
+            </div>
+        </div>
+
+        <!-- Toast Container -->
+        <div class="toast-container" id="toastContainer"></div>
+    </div>
+
+    <script src="/static/script.js"></script>
+</body>
+</html>
